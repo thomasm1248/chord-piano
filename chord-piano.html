@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2023 by thomasm1248 (http://jsbin.com/xuwiwus/1/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Chord Piano</title>
+<style id="jsbin-css">
+* {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  overflow: show;
+}
+
+table {
+  height: 100%;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+tr:nth-child(2n+1) td:nth-child(2n+1) {
+  background-color: #eee;
+}
+
+tr:nth-child(2n) td:nth-child(2n) {
+  background-color: #eee;
+}
+
+td {
+  text-align: center;
+  font-size: 30px;
+  width: 9.09%
+}
+</style>
+</head>
+<body id="body">
+
+<script id="jsbin-javascript">
+window.addEventListener("error", function() {
+  alert(err.message);
+}, false);
+
+let AudioContext = window.AudioContext || window.webkitAudioContext;
+let actx = new AudioContext();
+let node = actx.createGain();
+node.connect(actx.destination);
+
+let chordKey = [
+  [0, 4, 7],
+  [0, 3, 7],
+  [0, 4, 7, 10],
+  [0, 4, 7, 11],
+  [0, 3, 7, 10],
+  [0, 4, 7, 10, 14],
+  [0, 3, 6],
+  [0, 4, 8],
+  [0, 5, 7],
+  [0, 4, 7, 14],
+  [0, 7]
+];
+
+let shift = 0;
+function shiftMod(amount) {
+  shift += amount;
+document.getElementById("shift").innerHTML = shift;
+}
+
+function getFreq(num) {
+  let c4 = 261.63;
+  return c4 * 2 ** (num / 12);
+}
+
+function resetOscs() {
+  for(let i = 0; i < oscs.length; i++) {
+    oscs[i].disconnect(node);
+    oscs[i].stop();
+  }
+  oscs = [];
+}
+
+let oscs = [];
+function playChord(rootNum, chordNum) {
+  try{
+  resetOscs();
+  node.gain.value = 1 / chordKey[chordNum].length;
+  /*if(rootNum + chordKey[chordNum][chordKey[chordNum]] > 12 + shift) rootNum -= 12;*/
+  for(let i = 0; i < chordKey[chordNum].length; i++) {
+    let osc = actx.createOscillator();
+    osc.frequency.value = getFreq(((rootNum + chordKey[chordNum][i] - shift) % 12 + 12) % 12 + shift);
+    osc.type = "sine";
+    osc.detune = 0;
+    osc.connect(node);
+    osc.start();
+    oscs.push(osc);
+  }
+  }catch(e){alert(e)}
+}
+
+let notes = ["C", "", "D", "", "E", "F", "", "G", "", "A", "", "B"];
+let chords = ["", "m", "7", "M7", "m7", "79", "dim", "aug", "sus", "9", "5"];
+
+let body = document.getElementById("body");
+let table = document.createElement("table");
+for(let i = 0; i < 13; i++) {
+  let row = document.createElement("tr");
+  for(let j = 0; j < 11; j++) {
+    if(i) {
+      let newChord = document.createElement("td");
+      //newChord.innerHTML = notes[i - 1] + "<br>" + chords[j];
+      newChord.innerHTML = j ? chords[j] : notes[i - 1];
+      newChord.onclick = foo => playChord(i - 1, j);
+      row.appendChild(newChord);
+    } else {
+      let button = document.createElement("td");
+      switch(j) {
+        case 5:
+          button.innerHTML = "-12";
+          button.onclick = f => shiftMod(-12);
+          break;
+        case 6:
+          button.innerHTML = "-1";
+          button.onclick = f => shiftMod(-1);
+          break;
+        case 7:
+          button.innerHTML = shift;
+          button.id = "shift";
+          break;
+        case 8:
+          button.innerHTML = "+1";
+          button.onclick = f => shiftMod(1);
+          break;
+        case 9:
+          button.innerHTML = "+12";
+          button.onclick = f => shiftMod(12);
+          break;
+        case 10:
+          button.onclick = resetOscs;
+          button.innerHTML = "-";
+          break;
+      }
+      row.appendChild(button);
+    }
+  }
+  table.appendChild(row);
+}
+body.appendChild(table);
+</script>
+</body>
+</html>
